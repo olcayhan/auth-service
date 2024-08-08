@@ -8,14 +8,15 @@ import {
   Delete,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { Prisma, User } from '@prisma/client';
+import { User } from '@prisma/client';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('/add')
-  create(@Body() createUserDto: Prisma.UserCreateInput) {
+  create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
@@ -26,7 +27,7 @@ export class UserController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
+    return this.userService.findOne(id);
   }
 
   @Patch(':id')
@@ -36,6 +37,6 @@ export class UserController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+    return this.userService.remove(id);
   }
 }

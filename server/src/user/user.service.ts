@@ -7,6 +7,15 @@ export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: Prisma.UserCreateInput) {
+    const email = await this.prisma.user.findUnique({
+      where: {
+        email: createUserDto.email,
+      },
+    });
+    if (email) {
+      return 'Email already exists!';
+    }
+
     const data = await this.prisma.user.create({
       data: createUserDto,
     });
@@ -18,15 +27,27 @@ export class UserService {
     return data;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+    delete user.password;
+    return user;
   }
 
   update(id: number, updateUserDto: User) {
     return `This action updates a #${id} user`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    const user = await this.prisma.user.delete({
+      where: {
+        id,
+      },
+    });
+    delete user.password;
+    return user;
   }
 }
