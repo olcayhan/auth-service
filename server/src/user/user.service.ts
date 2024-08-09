@@ -22,6 +22,23 @@ export class UserService {
     return data;
   }
 
+  async login(loginUserDto: Prisma.UserCreateInput) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: loginUserDto.email,
+      },
+    });
+    if (!user) {
+      return 'User not found!';
+    }
+    if (user.password !== loginUserDto.password) {
+      return 'Password is incorrect!';
+    }
+    
+    delete user.password;
+    return user;
+  }
+
   async findAll() {
     const data = await this.prisma.user.findMany();
     return data;
