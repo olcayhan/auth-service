@@ -22,10 +22,14 @@ export class UserService {
       return 'Email already exists!';
     }
 
-    const data = await this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: createUserDto,
     });
-    return data;
+    const payload = { id: user.id, username: user.email };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
   }
 
   async login(loginUserDto: LoginUserDto) {
