@@ -1,12 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { LoginUserDto } from './dto/login-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
-  async create(createUserDto: Prisma.UserCreateInput) {
+  async create(createUserDto: CreateUserDto) {
     const email = await this.prisma.user.findUnique({
       where: {
         email: createUserDto.email,
@@ -22,7 +28,7 @@ export class UserService {
     return data;
   }
 
-  async login(loginUserDto: Prisma.UserCreateInput) {
+  async login(loginUserDto: LoginUserDto) {
     const user = await this.prisma.user.findUnique({
       where: {
         email: loginUserDto.email,
@@ -31,16 +37,23 @@ export class UserService {
     if (!user) {
       return 'User not found!';
     }
+
     if (user.password !== loginUserDto.password) {
       return 'Password is incorrect!';
     }
-    
-    delete user.password;
-    return user;
+
+    const payload = { id: user.id, username: user.email };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+    };
   }
 
   async findAll() {
     const data = await this.prisma.user.findMany();
+    data.forEach((user) => {
+      delete user.password;
+    });
     return data;
   }
 
@@ -50,12 +63,24 @@ export class UserService {
         id,
       },
     });
+
+    if (!user) {
+      return 'User not found!';
+    }
+
     delete user.password;
     return user;
   }
 
-  update(id: number, updateUserDto: User) {
-    return `This action updates a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: updateUserDto,
+    });
+    delete user.password;
+    return user;
   }
 
   async remove(id: string) {
