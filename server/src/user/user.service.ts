@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -38,12 +38,13 @@ export class UserService {
         email: loginUserDto.email,
       },
     });
+
     if (!user) {
-      return 'User not found!';
+      throw new NotFoundException('User not found!');
     }
 
     if (user.password !== loginUserDto.password) {
-      return 'Password is incorrect!';
+      throw new NotFoundException('Password is incorrect!');
     }
 
     const payload = { id: user.id, username: user.email };

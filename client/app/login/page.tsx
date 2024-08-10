@@ -1,25 +1,61 @@
 "use client";
-import React, { useState } from "react";
+import axios, { AxiosError, AxiosResponse } from "axios";
+import Link from "next/link";
+import React, { useRef, useState } from "react";
 
-const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const LoginPage = () => {
+  const mailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const [data, setData] = useState<AxiosResponse | null>(null);
+  const [error, setError] = useState<AxiosError | null>(null);
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-  };
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Add your login logic here
+    setError(null);
+    setData(null);
+    try {
+      const url = "http://localhost:5000/user/login";
+
+      const data = {
+        email: mailRef.current?.value,
+        password: passwordRef.current?.value,
+      };
+
+      const response = await axios.post(url, data);
+      setData(response);
+      console.log(response);
+    } catch (err: any) {
+      setError(err);
+    }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
+    <div className="flex flex-col justify-center items-center h-screen">
+      <div>
+        {error && (
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+            role="alert"
+          >
+            <strong className="font-bold">Error!</strong>
+            <span className="flex flex-col gap-3 underline">
+              {error.response?.data.message}
+            </span>
+          </div>
+        )}
+        {data && (
+          <div
+            className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 text-sm"
+            role="alert"
+          >
+            <span className="flex flex-col gap-3">
+              {data.data.access_token}
+            </span>
+          </div>
+        )}
+
+        <h1 className="text-4xl font-bold text-center mb-4">Login</h1>
+      </div>
       <form
         className="bg-white shadow-2xl rounded px-8 pt-6 pb-8 mb-4"
         onSubmit={handleSubmit}
@@ -36,9 +72,11 @@ const LoginPage: React.FC = () => {
             id="email"
             type="email"
             placeholder="Enter your email"
-            value={email}
-            onChange={handleEmailChange}
+            ref={mailRef}
           />
+          <span>
+            <small className="text-red-500">This field is required</small>
+          </span>
         </div>
         <div className="mb-6">
           <label
@@ -52,8 +90,7 @@ const LoginPage: React.FC = () => {
             id="password"
             type="password"
             placeholder="Enter your password"
-            value={password}
-            onChange={handlePasswordChange}
+            ref={passwordRef}
           />
         </div>
         <div className="flex items-center justify-between">
@@ -63,6 +100,9 @@ const LoginPage: React.FC = () => {
           >
             Sign In
           </button>
+          <Link className="text-blue-300 underline" href="/register">
+            Register here
+          </Link>
         </div>
       </form>
     </div>
