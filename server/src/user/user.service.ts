@@ -63,11 +63,23 @@ export class UserService {
 
       await this.mailerService.sendMail({
         to: user.email,
+        from: 'noreply@authservice.com',
         subject: 'Hesap Aktivasyonu',
-        text: 'Hesabınızı aktifleştirmek için aşağıdaki linke tıklayınız.',
-        context: {
-          token,
-        },
+        html: `
+        <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="UTF-8">
+              <title>E-posta Doğrulama</title>
+          </head>
+          <body>
+              <h1>Merhaba, ${user.name}</h1>
+              <p>E-posta adresinizi doğrulamak için lütfen aşağıdaki bağlantıya tıklayın:</p>
+              <a href="http://localhost:3000/auth/verify?token=${token}">E-posta doğrulama linki</a>
+              <p>Eğer bu işlemi siz yapmadıysanız, lütfen bu e-postayı görmezden gelin.</p>
+          </body>
+          </html>
+          `,
       });
 
       return {
