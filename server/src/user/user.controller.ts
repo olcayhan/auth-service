@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +18,17 @@ import { UserGuard } from './user.guard';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get('/delete')
+  deleteAll() {
+    console.log('delete');
+    return this.userService.deleteAll();
+  }
+
+  @Get('activate')
+  async activate(@Query('token') token: string) {
+    return this.userService.activate(token);
+  }
 
   @Post('/register')
   create(@Body() createUserDto: CreateUserDto) {
@@ -45,7 +57,7 @@ export class UserController {
     return this.userService.update(id, updateUserDto);
   }
 
-  @UseGuards(UserGuard)
+  // @UseGuards(UserGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(id);

@@ -1,35 +1,82 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtService } from '@nestjs/jwt';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     private jwtService: JwtService,
+    private mailerService: MailerService,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const email = await this.prisma.user.findUnique({
+  async deleteAll() {
+    await this.prisma.user.deleteMany();
+    return 'All users deleted!';
+  }
+
+  async activate(token: string) {
+    const decoded = this.jwtService.verify(token);
+    const user = await this.prisma.user.findUnique({
       where: {
-        email: createUserDto.email,
+        id: decoded.id,
       },
     });
-    if (email) {
-      return 'Email already exists!';
+
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    const user = await this.prisma.user.create({
-      data: createUserDto,
+    user.isActive = true;
+    await this.prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: user,
     });
-    const payload = { id: user.id, username: user.email };
 
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    return 'Hesap başarıyla aktifleştirildi!';
+  }
+
+  async create(createUserDto: CreateUserDto) {
+    try {
+      const email = await this.prisma.user.findUnique({
+        where: {
+          email: createUserDto.email,
+        },
+      });
+
+      if (email) {
+        throw new NotFoundException('Email already exists!');
+      }
+
+      const user = await this.prisma.user.create({
+        data: createUserDto,
+      });
+
+      const payload = { id: user.id, username: user.email };
+      const token = await this.jwtService.signAsync(payload);
+
+      await this.mailerService.sendMail({
+        to: user.email,
+        subject: 'Hesap Aktivasyonu',
+        text: 'Hesabınızı aktifleştirmek için aşağıdaki linke tıklayınız.',
+        context: {
+          token,
+        },
+      });
+
+      return {
+        access_token: token,
+      };
+    } catch (e) {
+      console.log(e);
+      throw new NotFoundException(e);
+    }
   }
 
   async login(loginUserDto: LoginUserDto) {
@@ -45,6 +92,10 @@ export class UserService {
 
     if (user.password !== loginUserDto.password) {
       throw new NotFoundException('Password is incorrect!');
+    }
+
+    if (user.isActive === false) {
+      throw new NotFoundException('User is not active!');
     }
 
     const payload = { id: user.id, username: user.email };

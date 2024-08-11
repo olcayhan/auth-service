@@ -3,9 +3,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [PrismaModule, UserModule],
+  imports: [
+    PrismaModule,
+    UserModule,
+    ConfigModule.forRoot({ envFilePath: '../env', isGlobal: true }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
